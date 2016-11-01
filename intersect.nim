@@ -59,8 +59,7 @@ var memory_pointer = 0x00000000
 var block_started = false
 var current_ast_stmt = 0
 
-proc gen_use(tokens: seq[string]) = 
-  add(AST, @[AST_LOOKUP[tokens[0]], tokens[1]])
+var current_path = ""
 
 proc gen_unit(tokens: seq[string]) = 
   add(AST, @[AST_LOOKUP[tokens[tokens.len - 2]], tokens[tokens.len - 1]])
@@ -183,14 +182,58 @@ proc do_sub(tokens: seq[string]) =
   memory[tokens[1]] = formatFloat(pointer - parseFloat(tokens[2]))
 
 var GEN_AST_FUNCS = {
-    USE : gen_use,
     UNIT : gen_unit,
     ENTRY : gen_entry,
     IF : gen_if,
     PUT : gen_put,
     END : gen_end,
-    "kek" : gen_use
+    "kek" : gen_put
 }.toTable
+
+proc gen_use(tokens: seq[string]) = 
+  if tokens[1] != "system":
+    if existsFile "$#$#.isf" % [current_path, tokens[1]]:
+      var syntax = readFile("$#$#.isf" % [current_path, tokens[1]])
+      for x in syntax.split("\n"):
+          if ":" in x:
+            var atom = x.split(":")
+            case atom[0]:
+              of "IF":
+                AST_LOOKUP[atom[1]] = AST_LOOKUP[IF]
+                GEN_AST_FUNCS[atom[1]] = GEN_AST_FUNCS[IF]
+              of "ELSE":
+                ELSE = atom[1]
+              of "DO":
+                DO = atom[1]
+              of "END":
+                AST_LOOKUP[atom[1]] = AST_LOOKUP[END]
+                GEN_AST_FUNCS[atom[1]] = GEN_AST_FUNCS[END]
+              of "PUT":
+                AST_LOOKUP[atom[1]] = AST_LOOKUP[PUT]
+                GEN_AST_FUNCS[atom[1]] = GEN_AST_FUNCS[PUT]
+              of "SPLIT":
+                SPLIT = atom[1]
+              of "FOR":
+                FOR = atom[1]
+              of "WHILE":
+                WHILE = atom[1]
+              of "BACKGROUND":
+                BACKGROUND = atom[1]
+              of "ENTRY":
+                AST_LOOKUP[atom[1]] = AST_LOOKUP[ENTRY]
+                GEN_AST_FUNCS[atom[1]] = GEN_AST_FUNCS[ENTRY]
+              of "UNIT":
+                UNIT = atom[1]
+              of "SOL":
+                SOL = atom[1]
+              of "EOL":
+                EOL = atom[1]
+         # if atom[0] == "IF"
+    else:
+      echo "Intersect: Could not load syntax file for use case $#" % tokens[1]
+      echo "System exited."
+      quit(QuitFailure)
+  add(AST, @[AST_LOOKUP[tokens[0]], tokens[1]])
 
 var AST_FUNCS = {
     "0" : do_use,
@@ -211,8 +254,11 @@ proc enumerateToAst(tokens: seq) =
   var i = 0
   for token in tokens:
     if AST_LOOKUP.hasKey(token):
-        var k = GEN_AST_FUNCS[token]
-        k(tokens)
+        if token == USE:
+          gen_use(tokens)
+        else:
+          var k = GEN_AST_FUNCS[token]
+          k(tokens)
     else:
         #echo "[Intersect]: Undefined atom at $#: $#" % [$i, token] 
         #returnd
@@ -237,7 +283,12 @@ proc prettyAST() =
   for x in AST:
     stdout.write join(x, "").replace("\n", "\\n")
 
+proc setPath(file: string) = 
+  if "/" in file:
+    current_path = "$#/" % [file.rsplit("/",1)[0]]
+    echo current_path
 proc read(file: string) = 
+  setPath(file)
   var code = readFile(file)
   for x in code.split("\n"):
     tokenize(strip(x))

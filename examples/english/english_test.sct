@@ -1,0 +1,21 @@
+χρήση english
+ 
+module test_module
+    var x = 5
+    var y = 1 - 1 + 2 + 100 + 900
+    var z = 9 * 9 * 9 * 9 + 5 + 3
+    var q = 1 / 1 * 2 - 5 * -5
+    put 'x:'
+    put x
+    put '\n'
+    put 'y:'
+    put y
+    put '\n'
+    put 'z:'
+    put z
+    put '\n'
+    put q 
+    if 45 == z do:
+        put 'The condition is true'
+    end
+end module test_module
