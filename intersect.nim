@@ -16,6 +16,9 @@ var WHILE = "\xce\xb5\xce\xbd\xcf\x8e"
 var BACKGROUND = "\xcf\x86\xcf\x8c\xce\xbd\xcf\x84\xce\xbf"
 var ENTRY = "\xce\xb5\xce\xaf\xcf\x83\xce\xbf\xce\xb4\xce\xbf\xcf\x82"
 var UNIT = "\xce\xbc\xce\xbf\xce\xbd\xce\xac\xce\xb4\xce\xb1"
+var READFILE = "\xce\xb4\xce\xb9\xce\xb1\xce\xb2\xce\xac\xce\xb6\xcf\x89"
+var WRITEFILE = "\xce\xb3\xcf\x81\xce\xac\xcf\x86\xcf\x89"
+var APPENDFILE = "\xcf\x80\xcf\x81\xce\xbf\xcf\x83\xce\xb8\xce\xad\xcf\x84\xcf\x89"
 var SOL = "\\"
 var EOL = "\n"
 var AST: seq[seq[string]] = @[]
@@ -32,8 +35,10 @@ var AST_LOOKUP = {
     WHILE : "8",
     BACKGROUND : "a",
     ENTRY : "2",
-    UNIT : "1"
-
+    UNIT : "1",
+    READFILE : "l",
+    WRITEFILE : "m",
+    APPENDFILE : "n"
 }.toTable
 
 var AST_ORDER:seq[string] = @["**", "*", "/", "+", "-", ""]
@@ -130,6 +135,15 @@ proc gen_end(tokens: seq[string]) =
   add(AST, @[AST_LOOKUP[END]])
   discard #End scope somehow
 
+proc gen_writefile(tokens: seq[string]) =
+  add(AST, @[AST_LOOKUP[WRITEFILE], tokens[1][0..tokens[1].len - 2], join(tokens[2..tokens.len - 1], " ")])
+
+proc gen_appendfile(tokens: seq[string]) =
+  add(AST, @[AST_LOOKUP[APPENDFILE], tokens[1][0..tokens[1].len - 2], join(tokens[2..tokens.len - 1], " ")])
+
+proc gen_readfile(tokens: seq[string]) =
+  add(AST, @[AST_LOOKUP[READFILE], tokens[1][0..tokens[1].len - 2], tokens[2]])
+
 proc do_use(tokens: seq[string]) = 
   discard
 
@@ -138,6 +152,19 @@ proc do_unit(tokens: seq[string]) =
 
 proc do_entry(tokens: seq[string]) = 
   memory[tokens[1]] = tokens[2]
+
+proc do_writefile(tokens: seq[string]) =
+  var to_write = join(tokens[2..tokens.len - 1], " ")
+  writeFile(tokens[1], "$#\n" % to_write[1..to_write.len - 2])
+
+proc do_readfile(tokens: seq[string]) =
+  memory[tokens[1]] = readFile(tokens[2])
+
+proc do_appendfile(tokens: seq[string]) =
+  var data = readFile(tokens[1])
+  var to_write = join(tokens[2..tokens.len - 1], " ")
+  data = "$#$#\n" % [data, to_write[1..to_write.len - 2]]
+  writeFile(tokens[1], data)
 
 proc do_if(tokens: seq[string]) =
   if memory.hasKey(tokens[2]) and memory.hasKey(tokens[3]):
@@ -187,7 +214,10 @@ var GEN_AST_FUNCS = {
     IF : gen_if,
     PUT : gen_put,
     END : gen_end,
-    "kek" : gen_put
+    "kek" : gen_put,
+    WRITEFILE : gen_writefile,
+    READFILE : gen_readfile,
+    APPENDFILE : gen_appendfile
 }.toTable
 
 proc gen_use(tokens: seq[string]) = 
@@ -247,7 +277,10 @@ var AST_FUNCS = {
     "d" : do_add,
     "g" : do_sub,
     "e" : do_mul,
-    "f" : do_div
+    "f" : do_div,
+    "l" : do_readfile,
+    "m" : do_writefile,
+    "n" : do_appendfile
 }.toTable
 
 proc enumerateToAst(tokens: seq) = 

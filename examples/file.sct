@@ -1,0 +1,9 @@
+χρήση system
+ 
+μονάδα test_module
+    γράφω q.txt, "ppoop"
+    προσθέτω q.txt, "Suck my off"
+    διαβάζω x, q.txt
+    χρήση english
+    put x
+end module test_module

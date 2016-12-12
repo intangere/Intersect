@@ -1,0 +1,22 @@
+χρήση system
+ 
+μονάδα test_module
+    είσοδος x = 5
+    είσοδος y = 1 - 1 + 2 + 100 + 900
+    είσοδος z = 9 * 9 * 9 * 9 + 5 + 3
+    είσοδος q = 1 / 1 * 2 - 5 * -5
+    βάζω 'x:'
+    βάζω x
+    βάζω '\n'
+    χρήση english
+    put 'y:'
+    put y
+    put '\n'
+    put 'z:'
+    put z
+    put '\n'
+    put q 
+    if 45 == z do:
+        put 'The condition is true'
+    end
+end module test_module
